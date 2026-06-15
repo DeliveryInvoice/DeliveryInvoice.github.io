@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>배송 확인 시스템</title>
+<style>
+  body{ font-family: monospace; max-width:400px; margin:40px auto; padding:0 16px; }
+  h2{ border-bottom:2px solid #333; padding-bottom:8px; }
+  label{ display:block; margin-top:10px; font-size:13px; color:#555; }
+  input{ width:100%; padding:8px; font-family:monospace; box-sizing:border-box; }
+  button{ margin-top:14px; padding:8px 14px; font-family:monospace; cursor:pointer; }
+  .row{ margin:6px 0; }
+  .row b{ display:inline-block; width:70px; }
+  .err{ color:#c0392b; }
+  .hidden{ display:none; }
+  .pill{ border:1px solid #c0552a; color:#c0552a; padding:2px 6px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h2>배송 확인 시스템</h2>
+
+<!-- 메뉴 -->
+<div id="menu">
+  <button onclick="show('driverLogin')">배송기사</button>
+  <button onclick="show('buyerLogin')">구매자</button>
+</div>
+
+<!-- 기사 로그인 -->
+<div id="driverLogin" class="hidden">
+  <label>기사번호</label><input id="d_id" placeholder="D001">
+  <label>비밀번호</label><input id="d_pw" type="password">
+  <button onclick="driverLogin()">로그인</button>
+  <button onclick="show('menu')">취소</button>
+  <p id="d_err" class="err hidden">❌ 인증 실패</p>
+</div>
+
+<!-- 기사 대시보드 -->
+<div id="driverDash" class="hidden">
+  <p id="d_welcome"></p>
+  <label>주문번호</label><input id="d_oid" placeholder="ORD001">
+  <button onclick="driverLookup()">조회</button>
+  <button onclick="show('menu')">로그아웃</button>
+  <div id="d_result"></div>
+</div>
+
+<!-- 구매자 로그인 -->
+<div id="buyerLogin" class="hidden">
+  <label>주문번호</label><input id="b_oid" placeholder="ORD001">
+  <label>비밀번호</label><input id="b_pw" type="password">
+  <button onclick="buyerLogin()">조회</button>
+  <button onclick="show('menu')">취소</button>
+  <p id="b_err" class="err hidden">❌ 인증 실패</p>
+</div>
+
+<!-- 구매자 결과 -->
+<div id="buyerResult" class="hidden">
+  <div id="b_result"></div>
+  <p style="font-size:12px;color:#777;">※ 상세주소는 보안상 가려집니다.</p>
+  <button onclick="show('menu')">처음으로</button>
+</div>
+
+<script>
+const DRIVERS = { D001:{pw:"1234",name:"김기사"}, D002:{pw:"5678",name:"이기사"} };
+const ORDERS = {
+  ORD001:{pw:"9999",buyer:"홍길동",address:"서울시 강남구 아무데나로 123",lat:37.5065,lon:127.0536,status:"배송중"},
+  ORD002:{pw:"1111",buyer:"이순신",address:"서울시 마포구 궁동 456",lat:37.5450,lon:126.9514,status:"배송완료"}
+};
+
+function show(id){
+  ["menu","driverLogin","driverDash","buyerLogin","buyerResult"].forEach(s=>{
+    document.getElementById(s).classList.toggle("hidden", s!==id);
+  });
+}
+
+function driverLogin(){
+  const id=document.getElementById("d_id").value.trim();
+  const pw=document.getElementById("d_pw").value;
+  const d=DRIVERS[id];
+  if(!d || d.pw!==pw){ document.getElementById("d_err").classList.remove("hidden"); return; }
+  document.getElementById("d_err").classList.add("hidden");
+  document.getElementById("d_welcome").textContent = `대시보드 — ${d.name}님`;
+  document.getElementById("d_result").innerHTML = "";
+  show("driverDash");
+}
+
+function driverLookup(){
+  const oid=document.getElementById("d_oid").value.trim();
+  const o=ORDERS[oid];
+  const box=document.getElementById("d_result");
+  if(!o){ box.innerHTML="<p>주문 없음</p>"; return; }
+  box.innerHTML=`
+    <div class="row"><b>수령인</b>${o.buyer}</div>
+    <div class="row"><b>주소</b>${o.address}</div>
+    <div class="row"><b>좌표</b>${o.lat}, ${o.lon}</div>
+    <div class="row"><b>상태</b><span class="pill">${o.status}</span></div>
+    <p><a href="https://maps.google.com/?q=${o.lat},${o.lon}" target="_blank">지도 보기</a></p>
+  `;
+}
+
+function buyerLogin(){
+  const oid=document.getElementById("b_oid").value.trim();
+  const pw=document.getElementById("b_pw").value;
+  const o=ORDERS[oid];
+  if(!o || o.pw!==pw){ document.getElementById("b_err").classList.remove("hidden"); return; }
+  document.getElementById("b_err").classList.add("hidden");
+  const masked = o.address.split(" ").slice(0,3).join(" ") + " ***";
+  document.getElementById("b_result").innerHTML=`
+    <div class="row"><b>주문번호</b>${oid}</div>
+    <div class="row"><b>수령인</b>${o.buyer}</div>
+    <div class="row"><b>주소</b>${masked}</div>
+    <div class="row"><b>상태</b><span class="pill">${o.status}</span></div>
+  `;
+  show("buyerResult");
+}
+</script>
+</body>
+</html>
